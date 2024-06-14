@@ -1,0 +1,16 @@
+#!/bin/bash
+#Light mode wallpaper
+wallpaper=$PRJ_PATH/.wechsel_wallpapers/light.jpg
+if [ -f $wallpaper  ]; then
+        gsettings set org.gnome.desktop.background picture-uri file://$wallpaper
+else
+        gsettings set org.gnome.desktop.background picture-uri {default_light}
+fi
+
+# Dark mode wallpaper
+wallpaper=$PRJ_PATH/.wechsel_wallpapers/dark.jpg
+if [ -f $wallpaper ]; then
+        gsettings set org.gnome.desktop.background picture-uri-dark file://$wallpaper
+else
+        gsettings set org.gnome.desktop.background picture-uri-dark {default_dark}
+fi	
