@@ -2,6 +2,14 @@
 name = "wechsel-wallpaper"
 version = "0.1.0"
 edition = "2021"
+authors = ["Uhrendoktor"]
+description = "A plugin for Wechsel that lets you define unique wallpapers for each project."
+license = "MIT"
+license-file = "LICENSE"
+repository = "git@github.com:Uhrendoktor/wechsel-wallpaper.git"
+readme = "README.md"
+keywords = ["wechsel", "wallpaper", "project", "background", "gnome"]
+categories = ["command-line-utilities", "productivity"]
 
 [dependencies]
 clap = { version = "4.5.7", features = ["derive"] }
