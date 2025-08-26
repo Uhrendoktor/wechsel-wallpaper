@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand};
+use serde::Deserialize;
 use std::os::unix::fs::OpenOptionsExt;
 use std::path::PathBuf;
 use std::{path::Path, process::Command};
@@ -63,12 +64,12 @@ pub fn get_wechsel_config_dir() -> PathBuf {
 
 pub fn get_current_project() -> String {
     let wechsel_config_dir = get_wechsel_config_dir();
-    let enviroment_variables = wechsel_config_dir.join("enviroment_variables.sh");
-    let enviroment_variables = enviroment_variables.to_str().unwrap();
+    let environment_variables = wechsel_config_dir.join("environment_variables.sh");
+    let environment_variables = environment_variables.to_str().unwrap();
 
     String::from_utf8(Command::new("bash")
         .arg("-c")
-        .arg(format!("source {enviroment_variables}; echo $PRJ"))
+        .arg(format!("source {environment_variables}; echo $PRJ"))
         .output()
         .expect("Unable to fetch current wechsel project. Please specify a project name.")
         .stdout
@@ -76,13 +77,41 @@ pub fn get_current_project() -> String {
 }
 
 pub fn get_project_path(project: &str) -> PathBuf {
-    PathBuf::from(String::from_utf8(Command::new("wechsel")
-        .arg("get-path")
-        .arg(project)
+    #[derive(Deserialize)]
+    struct Config {
+        pub tree: Tree,
+        #[allow(dead_code)]
+        pub active: String
+    }
+    #[derive(Deserialize)]
+    struct Tree {
+        pub name: String,
+        pub children: Vec<Tree>,
+        pub path: PathBuf
+    }
+
+    let config: Config = serde_json::from_slice(&Command::new("wechsel")
+        .arg("tree")
         .output()
-        .expect(format!("Unable to fetch path for project: {}", project).as_str())
+        .expect("Unable to fetch wechsel tree")
         .stdout
-    ).expect("Unable to read project path from wechsel.").trim().to_string())
+    )
+    .expect("Unable to parse wechsel tree");
+
+    fn search_for_project<'a>(tree: &'a Tree, project: &str) -> Option<&'a PathBuf> {
+        if tree.name == project {
+            return Some(&tree.path);
+        }
+        for child in &tree.children {
+            match search_for_project(child, project) {
+                v @ Some(_) => return v,
+                None => continue,
+            }
+        }
+        None
+    }
+
+    return search_for_project(&config.tree, project).expect(format!("Project not found in wechsel tree: {}", project).as_str()).to_owned();
 }
 
 pub fn get_wallpaper_dir(project_path: &PathBuf) -> PathBuf {
@@ -228,6 +257,7 @@ fn main() {
                 let _ = std::fs::remove_file(wechsel_wallpaper_installed);
             }
 
+            let _ = std::fs::remove_file(wechsel_wallpaper_deinit);
             println!("wechsel plugin [wechsel-wallpaper] deinitialized successfully.");
         }
         Some(Commands::Install { 
